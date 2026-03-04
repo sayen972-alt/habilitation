@@ -521,24 +521,36 @@ async function submitForm() {
   try {
     if (typeof grist !== 'undefined' && gristReady) {
 
-      // ── Créer la demande ──
-      const demIds = await grist.docApi.addRecords('Demandes_Habilitation', [{
-        nom_responsable: nom,
-        service:         service,
-        date_soumission: today,
-        statut:          'En attente',
-      }]);
-      const demandeRowId = demIds[0];
+      // ── Créer la demande via BulkAddOrReplaceRecord ──
+      const demAction = [
+        'BulkAddOrReplaceRecord',
+        'Demandes_Habilitation',
+        [null],  // rowIds null = nouvelles lignes
+        {
+          nom_responsable: [nom],
+          service:         [service],
+          date_soumission: [today],
+          statut:          ['En attente'],
+        }
+      ];
+      const demResult = await grist.docApi.applyUserActions([demAction]);
+      // récupère l'id de la ligne créée
+      const demandeRowId = demResult.retValues[0].rowIds[0];
 
       // ── Créer les agents liés ──
-      const agentRecords = rows.map(r => ({
-        id_demande:          demandeRowId,
-        prenom:              r.prenom,
-        nom:                 r.nom,
-        email_professionnel: r.email,
-        statut_habilitation: 'En attente',
-      }));
-      await grist.docApi.addRecords('Agents', agentRecords);
+      const agentAction = [
+        'BulkAddOrReplaceRecord',
+        'Agents',
+        rows.map(() => null),
+        {
+          id_demande:          rows.map(() => demandeRowId),
+          prenom:              rows.map(r => r.prenom),
+          nom:                 rows.map(r => r.nom),
+          email_professionnel: rows.map(r => r.email),
+          statut_habilitation: rows.map(() => 'En attente'),
+        }
+      ];
+      await grist.docApi.applyUserActions([agentAction]);
 
       showSuccess(nom, service, rows.length, true);
     } else {
