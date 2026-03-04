@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habilitation – Saisie agents</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Syne+Mono&family=Mulish:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:    #0f1923;
+  --paper:  #f7f5f0;
+  --card:   #ffffff;
+  --rule:   #e2ddd6;
+  --accent: #d4550f;
+  --muted:  #8a8178;
+  --ok:     #2d7a4f;
+  --err:    #c0392b;
+  --radius: 6px;
+}
+
+body {
+  font-family: 'Mulish', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--ink);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.header-tag {
+  font-family: 'Syne Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 3px 8px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+.header h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.01em;
+}
+.grist-pill {
+  font-family: 'Syne Mono', monospace;
+  font-size: 0.62rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #1e2d3d;
+  color: #6b7f8f;
+  letter-spacing: 0.06em;
+  transition: all 0.3s;
+}
+.grist-pill.connected { background: #0d2e1a; color: #4ade80; }
+.grist-pill.demo      { background: #2d1e0d; color: var(--accent); }
+
+/* ── Main ── */
+.main {
+  flex: 1;
+  padding: 28px 24px 60px;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ── Section label ── */
+.section-label {
+  font-family: 'Syne Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+/* ── Responsable card ── */
+.resp-card {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  margin-bottom: 28px;
+  box-shadow: 0 1px 4px rgba(15,25,35,0.06);
+}
+.resp-card .row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.field { flex: 1 1 180px; margin-bottom: 0; }
+.field label {
+  display: block;
+  font-family: 'Syne Mono', monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.field input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: 'Mulish', sans-serif;
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: #fdfcfa;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.field input:focus { border-color: var(--ink); background: #fff; }
+.field input.err   { border-color: var(--err); background: #fdf5f5; }
+.err-msg {
+  font-size: 0.68rem;
+  color: var(--err);
+  font-family: 'Syne Mono', monospace;
+  margin-top: 3px;
+  display: none;
+}
+.has-err .err-msg { display: block; }
+
+/* ── Agents list ── */
+.agents-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.agents-count {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--accent);
+  color: #fff;
+  padding: 2px 9px;
+  border-radius: 20px;
+  min-width: 28px;
+  text-align: center;
+}
+
+/* ── Agent row ── */
+.agent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  animation: slideIn 0.18s ease;
+  transition: box-shadow 0.2s;
+}
+.agent-row:hover { box-shadow: 0 2px 10px rgba(15,25,35,0.07); }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.agent-num {
+  font-family: 'Syne Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 22px;
+  padding-top: 10px;
+  text-align: center;
+}
+
+.agent-fields {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.agent-fields .field { flex: 1 1 130px; }
+.agent-fields .field input { padding: 8px 10px; font-size: 0.85rem; }
+
+.btn-del {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #c5bdb4;
+  font-size: 1rem;
+  padding: 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.btn-del:hover { color: var(--err); background: #fdf5f5; }
+
+/* ── Add button ── */
+.btn-add {
+  width: 100%;
+  margin-top: 6px;
+  padding: 11px;
+  border: 1.5px dashed var(--rule);
+  background: transparent;
+  border-radius: var(--radius);
+  font-family: 'Syne Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.btn-add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #fdf7f4;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center;
+  padding: 36px 20px;
+  color: var(--muted);
+  font-family: 'Syne Mono', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  border: 1.5px dashed var(--rule);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+}
+.empty-state .icon { font-size: 1.8rem; margin-bottom: 10px; opacity: 0.5; }
+
+/* ── Submit bar ── */
+.submit-bar {
+  position: sticky;
+  bottom: 0;
+  background: rgba(247,245,240,0.95);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--rule);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  z-index: 50;
+}
+.submit-info {
+  font-family: 'Syne Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.submit-info strong { color: var(--ink); }
+
+.btn-submit {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 11px 28px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  background: var(--ink);
+  color: #fff;
+  letter-spacing: 0.04em;
+  transition: background 0.2s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-submit:hover:not(:disabled) { background: #1e3048; }
+.btn-submit:active:not(:disabled) { transform: scale(0.98); }
+.btn-submit:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(30px);
+  opacity: 0;
+  background: var(--ink);
+  color: #fff;
+  font-family: 'Syne Mono', monospace;
+  font-size: 0.75rem;
+  padding: 10px 20px;
+  border-radius: 30px;
+  white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(15,25,35,0.2);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+  z-index: 200;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast.success { background: var(--ok); }
+.toast.error   { background: var(--err); }
+
+/* ── Success overlay ── */
+.success-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(247,245,240,0.97);
+  z-index: 300;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+}
+.success-overlay.show { display: flex; }
+.success-circle {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: var(--ok);
+  color: #fff;
+  font-size: 2rem;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 24px;
+  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+.success-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.success-sub {
+  font-family: 'Syne Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 32px;
+  line-height: 1.7;
+}
+.btn-reset {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 12px 32px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-reset:hover { background: var(--ink); color: #fff; }
+
+/* ── Spinner ── */
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 500px) {
+  .main { padding: 18px 14px 60px; }
+  .agent-fields { flex-direction: column; }
+  .resp-card .row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-tag">Habilitations</div>
+    <h1>Demande d'accès applicatif</h1>
+  </div>
+  <div class="grist-pill" id="grist-pill">⬤ Connexion…</div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Responsable -->
+  <div class="section-label">Responsable</div>
+  <div class="resp-card">
+    <div class="row">
+      <div class="field" id="fw-resp">
+        <label>Nom du responsable *</label>
+        <input id="resp-nom" type="text" placeholder="Dupont Jean">
+        <div class="err-msg">Champ requis</div>
+      </div>
+      <div class="field" id="fw-service">
+        <label>Service *</label>
+        <input id="resp-service" type="text" placeholder="Direction SI">
+        <div class="err-msg">Champ requis</div>
+      </div>
+      <div class="field" id="fw-appli">
+        <label>Applicatif *</label>
+        <input id="resp-appli" type="text" placeholder="SIRH, CRM…">
+        <div class="err-msg">Champ requis</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Agents -->
+  <div class="agents-header">
+    <div class="section-label" style="margin-bottom:0;flex:1">Agents à habiliter</div>
+    <span class="agents-count" id="agents-count">0</span>
+  </div>
+
+  <div id="agents-list">
+    <div class="empty-state" id="empty-state">
+      <div class="icon">👤</div>
+      Aucun agent ajouté — cliquez sur le bouton ci-dessous
+    </div>
+  </div>
+
+  <button class="btn-add" onclick="addRow()">＋ Ajouter un agent</button>
+
+</div>
+
+<!-- Submit bar -->
+<div class="submit-bar">
+  <div class="submit-info" id="submit-info">Aucun agent saisi</div>
+  <button class="btn-submit" id="btn-submit" onclick="submit()" disabled>
+    Enregistrer dans Grist
+  </button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Success overlay -->
+<div class="success-overlay" id="success-overlay">
+  <div class="success-circle">✓</div>
+  <div class="success-title">Demande enregistrée</div>
+  <div class="success-sub" id="success-sub"></div>
+  <button class="btn-reset" onclick="reset()">Nouvelle demande</button>
+</div>
+
+<script>
+// ── État ───────────────────────────────────────────────────────────────────
+let rows = [];      // { id, prenom, nom, email }
+let uid  = 0;
+let gristReady = false;
+
+// ── Grist init ─────────────────────────────────────────────────────────────
+function initGrist() {
+  const pill = document.getElementById('grist-pill');
+  if (typeof grist === 'undefined') {
+    pill.textContent = '⬤ Mode démo';
+    pill.classList.add('demo');
+    return;
+  }
+  grist.ready({ requiredAccess: 'full' });
+  gristReady = true;
+  pill.textContent = '⬤ Connecté';
+  pill.classList.add('connected');
+}
+
+// ── Gestion des lignes ─────────────────────────────────────────────────────
+function addRow() {
+  const id = ++uid;
+  rows.push({ id, prenom: '', nom: '', email: '' });
+  renderRows();
+  // focus sur le prénom de la nouvelle ligne
+  setTimeout(() => {
+    const inp = document.querySelector(`#row-${id} [data-f="prenom"]`);
+    if (inp) inp.focus();
+  }, 50);
+}
+
+function removeRow(id) {
+  rows = rows.filter(r => r.id !== id);
+  renderRows();
+}
+
+function sync(id, field, val) {
+  const r = rows.find(r => r.id === id);
+  if (r) r[field] = val.trim();
+  updateSubmitBar();
+}
+
+function renderRows() {
+  const list = document.getElementById('agents-list');
+  const empty = document.getElementById('empty-state');
+
+  // vider sauf l'empty state
+  [...list.querySelectorAll('.agent-row')].forEach(el => el.remove());
+
+  if (rows.length === 0) {
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    rows.forEach((r, i) => {
+      const div = document.createElement('div');
+      div.className = 'agent-row';
+      div.id = `row-${r.id}`;
+      div.innerHTML = `
+        <div class="agent-num">${String(i + 1).padStart(2, '0')}</div>
+        <div class="agent-fields">
+          <div class="field">
+            <label>Prénom *</label>
+            <input type="text" data-f="prenom" placeholder="Marie"
+              value="${esc(r.prenom)}"
+              oninput="sync(${r.id},'prenom',this.value)">
+          </div>
+          <div class="field">
+            <label>Nom *</label>
+            <input type="text" data-f="nom" placeholder="Martin"
+              value="${esc(r.nom)}"
+              oninput="sync(${r.id},'nom',this.value)">
+          </div>
+          <div class="field" style="flex:2 1 180px">
+            <label>Email professionnel *</label>
+            <input type="email" data-f="email" placeholder="m.martin@org.fr"
+              value="${esc(r.email)}"
+              oninput="sync(${r.id},'email',this.value)">
+          </div>
+        </div>
+        <button class="btn-del" onclick="removeRow(${r.id})" title="Supprimer">✕</button>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  document.getElementById('agents-count').textContent = rows.length;
+  updateSubmitBar();
+}
+
+function esc(s) {
+  return (s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+function updateSubmitBar() {
+  const filled = rows.filter(r => r.prenom && r.nom && validEmail(r.email));
+  const btn  = document.getElementById('btn-submit');
+  const info = document.getElementById('submit-info');
+  const resp = document.getElementById('resp-nom').value.trim();
+
+  if (rows.length === 0) {
+    info.innerHTML = 'Aucun agent saisi';
+    btn.disabled = true;
+  } else if (filled.length < rows.length) {
+    info.innerHTML = `<strong>${filled.length}/${rows.length}</strong> agent(s) complets`;
+    btn.disabled = true;
+  } else {
+    info.innerHTML = `<strong>${filled.length}</strong> agent(s) prêt(s) à enregistrer`;
+    btn.disabled = false;
+  }
+}
+
+function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+// ── Validation ─────────────────────────────────────────────────────────────
+function validate() {
+  let ok = true;
+
+  // Champs responsable
+  [['resp-nom','fw-resp'],['resp-service','fw-service'],['resp-appli','fw-appli']].forEach(([inpId, wrapId]) => {
+    const inp  = document.getElementById(inpId);
+    const wrap = document.getElementById(wrapId);
+    if (!inp.value.trim()) {
+      inp.classList.add('err');
+      wrap.classList.add('has-err');
+      ok = false;
+    } else {
+      inp.classList.remove('err');
+      wrap.classList.remove('has-err');
+    }
+  });
+
+  // Champs agents
+  rows.forEach(r => {
+    const row = document.getElementById(`row-${r.id}`);
+    ['prenom','nom','email'].forEach(f => {
+      const inp = row.querySelector(`[data-f="${f}"]`);
+      const bad = !inp.value.trim() || (f === 'email' && !validEmail(inp.value.trim()));
+      inp.classList.toggle('err', bad);
+      if (bad) ok = false;
+    });
+  });
+
+  return ok;
+}
+
+// ── Soumission ─────────────────────────────────────────────────────────────
+async function submit() {
+  if (rows.length === 0) { toast('error', 'Ajoutez au moins un agent.'); return; }
+  if (!validate())       { toast('error', 'Corrigez les champs en rouge.'); return; }
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Enregistrement…';
+
+  const nom     = document.getElementById('resp-nom').value.trim();
+  const service = document.getElementById('resp-service').value.trim();
+  const appli   = document.getElementById('resp-appli').value.trim();
+  const today   = new Date().toISOString().slice(0, 10);
+
+  try {
+    if (typeof grist !== 'undefined' && gristReady) {
+      // ── Écriture dans Grist ──
+      const demTable = grist.getTable('Demandes_Habilitation');
+      const demandeRowId = await demTable.create({
+        nom_responsable: nom,
+        service:         service,
+        applicatif:      appli,
+        date_soumission: today,
+        statut:          'En attente',
+      });
+
+      const agTable = grist.getTable('Agents');
+      for (const r of rows) {
+        await agTable.create({
+          id_demande:           demandeRowId,
+          prenom:               r.prenom,
+          nom:                  r.nom,
+          email_professionnel:  r.email,
+          statut_habilitation:  'En attente',
+        });
+      }
+      showSuccess(nom, appli, rows.length, true);
+
+    } else {
+      // ── Mode démo ──
+      await new Promise(res => setTimeout(res, 900));
+      showSuccess(nom, appli, rows.length, false);
+    }
+
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = 'Enregistrer dans Grist';
+    toast('error', 'Erreur Grist : ' + (e.message || 'vérifiez les droits du widget.'));
+    console.error(e);
+  }
+}
+
+function showSuccess(resp, appli, count, real) {
+  const overlay = document.getElementById('success-overlay');
+  document.getElementById('success-sub').innerHTML =
+    `Responsable : <strong>${resp}</strong><br>` +
+    `Applicatif : <strong>${appli}</strong><br>` +
+    `${count} agent${count > 1 ? 's' : ''} enregistré${count > 1 ? 's' : ''}` +
+    (real ? ' dans Grist.' : ' (mode démo — non persisté).');
+  overlay.classList.add('show');
+}
+
+function reset() {
+  rows = []; uid = 0;
+  ['resp-nom','resp-service','resp-appli'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('success-overlay').classList.remove('show');
+  const btn = document.getElementById('btn-submit');
+  btn.innerHTML = 'Enregistrer dans Grist';
+  renderRows();
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(type, msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = 'toast'; }, 3500);
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  renderRows();
+  initGrist();
+});
+</script>
+
+<script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+</body>
+</html>
