@@ -520,23 +520,26 @@ async function submitForm() {
 
   try {
     if (typeof grist !== 'undefined' && gristReady) {
-      const demTable     = grist.getTable('Demandes_Habilitation');
-      const demandeRowId = await demTable.create({
+
+      // ── Créer la demande ──
+      const demIds = await grist.docApi.addRecords('Demandes_Habilitation', [{
         nom_responsable: nom,
         service:         service,
         date_soumission: today,
         statut:          'En attente',
-      });
-      const agTable = grist.getTable('Agents');
-      for (const r of rows) {
-        await agTable.create({
-          id_demande:          demandeRowId,
-          prenom:              r.prenom,
-          nom:                 r.nom,
-          email_professionnel: r.email,
-          statut_habilitation: 'En attente',
-        });
-      }
+      }]);
+      const demandeRowId = demIds[0];
+
+      // ── Créer les agents liés ──
+      const agentRecords = rows.map(r => ({
+        id_demande:          demandeRowId,
+        prenom:              r.prenom,
+        nom:                 r.nom,
+        email_professionnel: r.email,
+        statut_habilitation: 'En attente',
+      }));
+      await grist.docApi.addRecords('Agents', agentRecords);
+
       showSuccess(nom, service, rows.length, true);
     } else {
       await new Promise(res => setTimeout(res, 900));
