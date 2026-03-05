@@ -521,41 +521,43 @@ async function submitForm() {
   try {
     if (typeof grist !== 'undefined' && gristReady) {
 
-      // ── Créer la demande ──
-      // upsert avec allowEmptyRequire:true = toujours insérer une nouvelle ligne
-      const demTable = grist.getTable('Demandes_Habilitation');
-      const demResult = await demTable.upsert(
+      // ── 1. Créer la demande ──
+      const demResult = await grist.docApi.applyUserActions([[
+        'BulkAddRecord',
+        'Demandes_Habilitation',
+        [0],
         {
-          require: {},
-          fields: {
-            nom_responsable: nom,
-            service:         service,
-            date_soumission: today,
-            statut:          'En attente',
-          }
-        },
-        { allowEmptyRequire: true, add: true, update: false }
-      );
-      const demandeRowId = Array.isArray(demResult) ? demResult[0] : demResult;
-      console.log('Demande créée, rowId:', demandeRowId);
+          nom_responsable: [nom],
+          service:         [service],
+          date_soumission: [today],
+          statut:          ['En attente'],
+        }
+      ]]);
 
-      // ── Créer les agents liés ──
-      const agTable = grist.getTable('Agents');
-      for (const r of rows) {
-        await agTable.upsert(
-          {
-            require: {},
-            fields: {
-              id_demande:          demandeRowId,
-              prenom:              r.prenom,
-              nom:                 r.nom,
-              email_professionnel: r.email,
-              statut_habilitation: 'En attente',
-            }
-          },
-          { allowEmptyRequire: true, add: true, update: false }
-        );
+      // Récupère l'id de la nouvelle ligne — retValues peut avoir plusieurs formats
+      console.log('demResult:', JSON.stringify(demResult));
+      let demandeRowId = null;
+      if (demResult && demResult.retValues) {
+        const rv = demResult.retValues[0];
+        demandeRowId = Array.isArray(rv) ? rv[0] : rv;
       }
+      console.log('demandeRowId:', demandeRowId);
+      if (!demandeRowId) throw new Error('Id demande non récupéré : ' + JSON.stringify(demResult));
+
+      // ── 2. Créer tous les agents liés ──
+      // id_demande est Ref:Demandes_Habilitation → on passe l'entier rowId
+      await grist.docApi.applyUserActions([[
+        'BulkAddRecord',
+        'Agents',
+        rows.map(() => 0),
+        {
+          id_demande:          rows.map(() => demandeRowId),
+          prenom:              rows.map(r => r.prenom),
+          nom:                 rows.map(r => r.nom),
+          email_professionnel: rows.map(r => r.email),
+          statut_habilitation: rows.map(() => 'En attente'),
+        }
+      ]]);
 
       showSuccess(nom, service, rows.length, true);
     } else {
